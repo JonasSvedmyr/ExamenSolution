@@ -1,9 +1,11 @@
 ﻿using DAL.Data;
+using DAL.Data.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NewsAccessAPI.Models;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -46,7 +48,7 @@ namespace NewsAccessAPI.Controllers
                         url = article.url,
                         urlToImage = article.urlToImage,
                         Categories = categories
-                        
+
                     });
                 }
             }
@@ -85,6 +87,52 @@ namespace NewsAccessAPI.Controllers
         public async Task<ActionResult> GetCategories()
         {
             return Ok(_newsContext.Categoris.ToList());
+        }
+
+        [AllowAnonymous]
+        [HttpGet("Search/{query}")]
+        public async Task<ActionResult> Search([FromRoute] string query)
+        {
+            var keyWords = query.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+
+            var queryString = "SELECT a.[Id],[SourceId],[SourceName],[author],[title],[description],[url],[urlToImage],[publishedAt],[content] FROM [NewsDB].[dbo].[Articles] as a left join ArticleCategori as ac on a.Id = ac.articleId left join Categoris as c on ac.categoriId = c.Id where ";
+
+            for (int i = 0; i < keyWords.Length; i++)
+            {
+                if (i != 0)
+                {
+                    queryString = queryString + " and ";
+                }
+                queryString = queryString + $"([SourceName] like '%{keyWords[i]}%' or [author] like '%{keyWords[i]}%' or [title] like '%{keyWords[i]}%' or [description] like '%{keyWords[i]}%' or [content] like '%{keyWords[i]}%' or [c].[Name] like '%{keyWords[i]}%')";
+            }
+            Debug.WriteLine(queryString);
+            var articleIds = _newsContext.Articles.FromSqlRaw(queryString).Select(x => x.Id).ToList();
+            var categories = new List<string>();
+            var articlePreviews = new List<ArticlePreviewModel>();
+            var dbCategories = _newsContext.Categoris.ToList();
+
+            foreach (var id in articleIds)
+            {
+                var article = _newsContext.Articles.Include(x => x.ArticleCategoris).Where(x => x.Id == id).FirstOrDefault();
+                foreach (var category in article.ArticleCategoris)
+                {
+                    categories.Add(dbCategories.Where(x => x.Id == category.categoriId).FirstOrDefault().Name);
+                }
+                articlePreviews.Add(new ArticlePreviewModel
+                {
+                    Id = article.Id,
+                    description = article.description,
+                    title = article.title,
+                    author = article.author,
+                    publishedAt = article.publishedAt,
+                    SourceName = article.SourceName,
+                    url = article.url,
+                    urlToImage = article.urlToImage,
+                    Categories = categories
+
+                });
+            }
+            return Ok(articlePreviews);
         }
     }
 }
