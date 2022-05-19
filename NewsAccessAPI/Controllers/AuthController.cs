@@ -1,5 +1,7 @@
 ﻿using DAL.Data;
 using DAL.Data.Entities;
+using DAL.Services;
+using log4net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -29,65 +31,74 @@ namespace NewsAccessAPI.Controllers
         private Context _context;
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
-
-        public AuthController(Context context, UserManager<User> userManager, SignInManager<User> signInManager)
+        private ILog _logger;
+        public AuthController(Context context, UserManager<User> userManager, SignInManager<User> signInManager, ILogger logger)
         {
             _context = context;
             _userManager = userManager;
             _signInManager = signInManager;
+            _logger = logger.GetLogger(typeof(AuthController));
         }
 
         [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginModel model)
         {
-
-            User user = model.User.Contains("@") ? await _userManager.FindByEmailAsync(model.User) : await _userManager.FindByNameAsync(model.User);
-            if (user != null)
+            try
             {
-                var signInResult = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
-
-                if (signInResult.Succeeded)
+                User user = model.User.Contains("@") ? await _userManager.FindByEmailAsync(model.User) : await _userManager.FindByNameAsync(model.User);
+                if (user != null)
                 {
-                    Config config = new Config();
-                    using (StreamReader r = new StreamReader("Config.json"))
-                    {
-                        string json = r.ReadToEnd();
-                        config = JsonConvert.DeserializeObject<Config>(json);
-                    }
-                    var roles = await _userManager.GetRolesAsync(user);
-                    var tokenHandler = new JwtSecurityTokenHandler();
-                    var key = Encoding.ASCII.GetBytes(config.Key);
-                    var tokenDescriptor = new SecurityTokenDescriptor
-                    {
+                    var signInResult = await _signInManager.CheckPasswordSignInAsync(user, model.Password, false);
 
-
-                        // Add your claims to the JWT token
-                        Subject = new ClaimsIdentity(new Claim[]
+                    if (signInResult.Succeeded)
+                    {
+                        Config config = new Config();
+                        using (StreamReader r = new StreamReader("Config.json"))
                         {
+                            string json = r.ReadToEnd();
+                            config = JsonConvert.DeserializeObject<Config>(json);
+                        }
+                        var roles = await _userManager.GetRolesAsync(user);
+                        var tokenHandler = new JwtSecurityTokenHandler();
+                        var key = Encoding.ASCII.GetBytes(config.Key);
+                        var tokenDescriptor = new SecurityTokenDescriptor
+                        {
+
+
+                            // Add your claims to the JWT token
+                            Subject = new ClaimsIdentity(new Claim[]
+                            {
                             new Claim(ClaimTypes.Name, user.UserName),
                             new Claim(ClaimTypes.Email, user.Email),
                             new Claim(ClaimTypes.Role, roles.First().ToString())
 
-                        }),
-                        Expires = DateTime.UtcNow.AddDays(1),
-                        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                    };
+                            }),
+                            Expires = DateTime.UtcNow.AddDays(1),
+                            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                        };
 
-                    var token = tokenHandler.CreateToken(tokenDescriptor);
-                    var tokenString = tokenHandler.WriteToken(token);
+                        var token = tokenHandler.CreateToken(tokenDescriptor);
+                        var tokenString = tokenHandler.WriteToken(token);
 
-                    return Ok(new { Token = tokenString });
+                        return Ok(new { Token = tokenString });
+                    }
+                    else
+                    {
+                        return BadRequest("No user or password matched, try again.");
+                    }
                 }
                 else
                 {
-                    return Ok("No user or password matched, try again.");
+                    return BadRequest("No such user exists");
                 }
             }
-            else
+            catch (Exception e)
             {
-                return Ok("No such user exists");
+                _logger.Error(e);
+                return StatusCode(500);
             }
+            
 
         }
 
@@ -95,70 +106,57 @@ namespace NewsAccessAPI.Controllers
         [HttpPost("register")]
         public async Task<ActionResult> Register([FromBody] RegisterModel model)
         {
-            // Always better with a global try catch
-            User newUser = new User()
+            try
             {
-                Email = model.Email,
-                UserName = model.Username,
-                //AgreedToTerms = model.AgreedToTerms,
-                EmailConfirmed = false,
-                Id = Guid.NewGuid().ToString()
-            };
-
-            var result = await _userManager.CreateAsync(newUser, model.Password);
-            if (!result.Succeeded)
-            {
-                var exceptionText = result.Errors.Aggregate("User Creation Failed - Identity Exception. Errors were: \n\r\n\r", (current, error) => current + (" - " + error + "\n\r"));
-                throw new Exception(exceptionText);
-            }
-            if (result.Succeeded)
-            {
-                User user = await _userManager.FindByNameAsync(newUser.UserName);
-                if (user is not null)
+                User newUser = new User()
                 {
-                    await _userManager.AddToRoleAsync(newUser, "User");
+                    Email = model.Email,
+                    UserName = model.Username,
+                    //AgreedToTerms = model.AgreedToTerms,
+                    EmailConfirmed = false,
+                    Id = Guid.NewGuid().ToString()
+                };
 
-                    //Remember to set your custom data and relationships here
+                var result = await _userManager.CreateAsync(newUser, model.Password);
+                if (!result.Succeeded)
+                {
+                    var exceptionText = result.Errors.Aggregate("User Creation Failed - Identity Exception. Errors were: \n\r\n\r", (current, error) => current + (" - " + error + "\n\r"));
+                    throw new Exception(exceptionText);
+                }
+                if (result.Succeeded)
+                {
+                    User user = await _userManager.FindByNameAsync(newUser.UserName);
+                    if (user is not null)
+                    {
+                        await _userManager.AddToRoleAsync(newUser, "User");
+                        
+                        _context.SaveChanges();
 
-                    //UserSettings settings = new UserSettings()
-                    //{
-                    //    Id = Guid.NewGuid().ToString(),
-                    //    DarkMode = true,
-                    //    User = user
-                    //};
-
-                    //UserGDPR gdpr = new UserGDPR()
-                    //{
-                    //    Id = Guid.NewGuid().ToString(),
-                    //    UseMyData = false,
-                    //    User = user
-                    //};
-
-                    ////Add it to the context
-                    //_context.UserSettings.Add(settings);
-                    //_context.UserGDPR.Add(gdpr);
-
-                    //Save the data
-                    _context.SaveChanges();
-
-                    return Ok(new { result = $"User {model.Username} has been created", Token = "xxx" });
+                        return Ok(new { result = $"User {model.Username} has been created", Token = "xxx" });
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "Registration failed for unknown reasons, please try again." });
+                    }
                 }
                 else
                 {
-                    return Ok(new { message = "Registration failed for unknown reasons, please try again." });
+                    StringBuilder errorString = new StringBuilder();
+
+                    foreach (var error in result.Errors)
+                    {
+                        errorString.Append(error.Description);
+                    }
+
+                    return BadRequest(new { result = $"Register Fail: {errorString.ToString()}" });
                 }
             }
-            else
+            catch (Exception e)
             {
-                StringBuilder errorString = new StringBuilder();
-
-                foreach (var error in result.Errors)
-                {
-                    errorString.Append(error.Description);
-                }
-
-                return Ok(new { result = $"Register Fail: {errorString.ToString()}" });
+                _logger.Error(e);
+                return StatusCode(500);
             }
+            
 
         }
     }

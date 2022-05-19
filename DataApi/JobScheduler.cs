@@ -3,6 +3,7 @@ using DataApi.Models;
 using Microsoft.Extensions.Hosting;
 using Quartz;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +23,9 @@ namespace DataApi
             IJobDetail jobDetail = CreateJob(jobMetaData);
             ITrigger trigger = CreateTrigger(jobMetaData);
             await Scheduler.ScheduleJob(jobDetail, trigger, cancellationToken);
+            Debug.WriteLine("starting jobs");
             await Scheduler.Start(cancellationToken);
+
         }
         private ITrigger CreateTrigger(JobMetaData jobMetaData)
         {

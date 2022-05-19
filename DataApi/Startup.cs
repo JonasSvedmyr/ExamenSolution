@@ -1,3 +1,4 @@
+using DAL;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -46,6 +47,8 @@ namespace DataApi
 
             services.AddSingleton(provider => _scheduler);
             services.AddSingleton<IHostedService, JobScheduler>();
+            services.AddSingleton<DAL.Services.ILogger>(new Logger("DataApiLog.txt"));
+
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
