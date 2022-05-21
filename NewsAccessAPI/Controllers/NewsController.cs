@@ -3,13 +3,18 @@ using DAL.Data;
 using DAL.Data.Entities;
 using DAL.Services;
 using log4net;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NewsAccessAPI.Data.Entities;
 using NewsAccessAPI.Models;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace NewsAccessAPI.Controllers
@@ -19,11 +24,13 @@ namespace NewsAccessAPI.Controllers
     public class NewsController : ControllerBase
     {
         private NewsContext _newsContext;
+        private UserManager<User> _userManager;
         private ILog _logger;
 
-        public NewsController(NewsContext newsContext, ILogger logger)
+        public NewsController(NewsContext newsContext, UserManager<User> userManager, ILogger logger)
         {
             _newsContext = newsContext;
+            _userManager = userManager;
             _logger = logger.GetLogger(typeof(NewsController));
         }
         [AllowAnonymous]
@@ -32,6 +39,13 @@ namespace NewsAccessAPI.Controllers
         {
             try
             {
+                var auth = await HttpContext.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
+                if (auth.Succeeded)
+                {
+                    var claimsPrincipal = auth.Principal;
+                    var user = await _userManager.FindByNameAsync(claimsPrincipal.Claims.FirstOrDefault(a => a.Type == ClaimTypes.Name).Value);
+                }
+
                 var dbCategories = _newsContext.Categoris.ToList();
                 var artticlePreviews = new List<ArticlePreviewModel>();
                 foreach (var item in model)

@@ -108,9 +108,9 @@ namespace NewsAccessAPI
             services.AddDbContext<Context>(options =>
                     options.UseSqlServer(config.UserDBConnectionString));
 
-            services.AddIdentityCore<User>(options => options.SignIn.RequireConfirmedAccount = false)
-                .AddRoles<IdentityRole>()
-                .AddEntityFrameworkStores<Context>();
+            //services.AddIdentityCore<User>(options => options.SignIn.RequireConfirmedAccount = false)
+            //    .AddRoles<IdentityRole>()
+            //    .AddEntityFrameworkStores<Context>();
 
             services.AddIdentity<User, IdentityRole>(options =>
             {
@@ -137,7 +137,7 @@ namespace NewsAccessAPI
             app.UseRouting();
 
             app.UseAuthentication();
-            
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
