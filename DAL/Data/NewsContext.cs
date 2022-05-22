@@ -41,6 +41,42 @@ namespace DAL.Data
         {
             modelBuilder.Entity<Article>().HasIndex(x => new {x.SourceName,x.author,x.title,x.publishedAt});
             modelBuilder.Entity<Article>().HasKey(x => x.Id);
+
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 1,
+                Name = "business"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 2,
+                Name = "entertainment"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 3,
+                Name = "general"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 4,
+                Name = "health"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 5,
+                Name = "science"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 6,
+                Name = "sports"
+            });
+            modelBuilder.Entity<Categori>().HasData(new Categori
+            {
+                Id = 7,
+                Name = "technology"
+            });
         }
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
     }
