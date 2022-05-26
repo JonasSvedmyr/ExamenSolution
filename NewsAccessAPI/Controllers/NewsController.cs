@@ -38,12 +38,12 @@ namespace NewsAccessAPI.Controllers
         }
         [AllowAnonymous]
         [HttpPost("GetLatestNews")]
-        public async Task<ActionResult> GetLatestNews([FromBody] List<GetLatestNewsModel> model)
+        public async Task<ActionResult> GetLatestNews()
         {
             try
             {
                 var auth = await HttpContext.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
-                if (auth.Succeeded)//TODO if no usersettings landinpage will be null
+                if (auth.Succeeded)//TODO if no usersettings landinpage will be null, add defualt
                 {
                     var claimsPrincipal = auth.Principal;
                     var user = await _userManager.FindByNameAsync(claimsPrincipal.Claims.FirstOrDefault(a => a.Type == ClaimTypes.Name).Value);
@@ -115,33 +115,6 @@ namespace NewsAccessAPI.Controllers
                         latestNewsModels.Add(new LatestNewsModel { Categori = categori.Name, Articels = articlePreviews });
                     }
                     return Ok(latestNewsModels);
-                    //var artticlePreviews = new List<ArticlePreviewModel>();
-                    //foreach (var item in model)
-                    //{
-                    //    var articales = _newsContext.Articles.Include(x => x.ArticleCategoris).Where(x => x.ArticleCategoris.Any(x => x.categoriId == item.CategoryId)).OrderBy(x => x.publishedAt).Take(item.Count).ToList();
-                    //    foreach (var article in articales)
-                    //    {
-                    //        var categories = new List<string>();
-                    //        foreach (var category in article.ArticleCategoris)
-                    //        {
-                    //            categories.Add(dbCategories.Where(x => x.Id == category.categoriId).FirstOrDefault().Name);
-                    //        }
-                    //        artticlePreviews.Add(new ArticlePreviewModel
-                    //        {
-                    //            Id = article.Id,
-                    //            description = article.description,
-                    //            title = article.title,
-                    //            author = article.author,
-                    //            publishedAt = article.publishedAt,
-                    //            SourceName = article.SourceName,
-                    //            url = article.url,
-                    //            urlToImage = article.urlToImage,
-                    //            Categories = categories
-
-                    //        });
-                    //    }
-                    //}
-                    //return Ok(artticlePreviews);
                 }
 
             }
@@ -161,7 +134,7 @@ namespace NewsAccessAPI.Controllers
             try
             {
                 var article = _newsContext.Articles.Include(x => x.ArticleCategoris).Where(x => x.Id == id).FirstOrDefault();
-                if(article == null)
+                if(article != null)
                 {
                 var categories = new List<string>();
                 var dbCategories = _newsContext.Categoris.ToList();
