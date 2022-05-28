@@ -25,7 +25,6 @@ namespace NewsAccessAPI.Controllers
 {
     [Route("[controller]")]
     [ApiController]
-    //[Authorize]
     public class AuthController : ControllerBase
     {
         private Context _context;
@@ -64,9 +63,6 @@ namespace NewsAccessAPI.Controllers
                         var key = Encoding.ASCII.GetBytes(config.Key);
                         var tokenDescriptor = new SecurityTokenDescriptor
                         {
-
-
-                            // Add your claims to the JWT token
                             Subject = new ClaimsIdentity(new Claim[]
                             {
                             new Claim(ClaimTypes.Name, user.UserName),
@@ -112,7 +108,6 @@ namespace NewsAccessAPI.Controllers
                 {
                     Email = model.Email,
                     UserName = model.Username,
-                    //AgreedToTerms = model.AgreedToTerms,
                     EmailConfirmed = false,
                     Id = Guid.NewGuid().ToString()
                 };
@@ -132,7 +127,7 @@ namespace NewsAccessAPI.Controllers
                         
                         _context.SaveChanges();
 
-                        return Ok(new { result = $"User {model.Username} has been created", Token = "xxx" });
+                        return Ok(new { result = $"User {model.Username} has been created" });
                     }
                     else
                     {

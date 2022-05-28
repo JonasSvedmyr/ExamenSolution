@@ -19,7 +19,7 @@ namespace DataApi
         }
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            var jobMetaData = new JobMetaData(Guid.NewGuid(), Guid.NewGuid(), typeof(NewsAPIJob), "GoogleNews", "0 0/1 * * * ?");
+            var jobMetaData = new JobMetaData(Guid.NewGuid(), Guid.NewGuid(), typeof(NewsAPIJob), "NewsAPI", "0 0/1 * * * ?");
             IJobDetail jobDetail = CreateJob(jobMetaData);
             ITrigger trigger = CreateTrigger(jobMetaData);
             await Scheduler.ScheduleJob(jobDetail, trigger, cancellationToken);

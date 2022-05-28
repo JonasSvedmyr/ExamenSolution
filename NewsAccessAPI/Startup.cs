@@ -77,7 +77,7 @@ namespace NewsAccessAPI
                     ValidateIssuer = false,
                     ValidateAudience = false,
                     ValidateLifetime = true,
-                    ValidAudience = "vauCoreApi",
+                    ValidAudience = "NewsAccessApi",
                     ValidIssuer = "https://api.project.default",
                 };
 
@@ -107,10 +107,6 @@ namespace NewsAccessAPI
 
             services.AddDbContext<Context>(options =>
                     options.UseSqlServer(config.UserDBConnectionString));
-
-            //services.AddIdentityCore<User>(options => options.SignIn.RequireConfirmedAccount = false)
-            //    .AddRoles<IdentityRole>()
-            //    .AddEntityFrameworkStores<Context>();
 
             services.AddIdentity<User, IdentityRole>(options =>
             {
