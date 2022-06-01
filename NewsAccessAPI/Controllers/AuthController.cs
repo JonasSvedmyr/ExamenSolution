@@ -115,8 +115,7 @@ namespace NewsAccessAPI.Controllers
                 var result = await _userManager.CreateAsync(newUser, model.Password);
                 if (!result.Succeeded)
                 {
-                    var exceptionText = result.Errors.Aggregate("User Creation Failed - Identity Exception. Errors were: \n\r\n\r", (current, error) => current + (" - " + error + "\n\r"));
-                    throw new Exception(exceptionText);
+                    return BadRequest(result.Errors.FirstOrDefault().Description);
                 }
                 if (result.Succeeded)
                 {
